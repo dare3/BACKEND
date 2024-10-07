@@ -23,7 +23,7 @@
     "colors": "^1.4.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
-    "express": "^2.5.11",
+    "express": "^4.21.0",
     "jsonschema": "^1.2.6",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
