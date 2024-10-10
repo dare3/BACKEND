@@ -24,6 +24,13 @@ function validateSchema(data, schema) {
   }
 }
 
+/** Helper function to validate number query parameters */
+function validateNumberParam(param, paramName) {
+  if (param !== undefined && isNaN(parseInt(param, 10))) {
+    throw new BadRequestError(`${paramName} must be a number`);
+  }
+}
+
 /** POST / { company } => { company }
  *
  * Adds a new company.
@@ -56,13 +63,8 @@ router.get("/", async (req, res, next) => {
   try {
     const { minEmployees, maxEmployees, ...query } = req.query;
 
-    if (minEmployees !== undefined && isNaN(parseInt(minEmployees))) {
-      return next(new BadRequestError("minEmployees must be a number"));
-    }
-
-    if (maxEmployees !== undefined && isNaN(parseInt(maxEmployees))) {
-      return next(new BadRequestError("maxEmployees must be a number"));
-    }
+    validateNumberParam(minEmployees, "minEmployees");
+    validateNumberParam(maxEmployees, "maxEmployees");
 
     const filters = {
       ...query,

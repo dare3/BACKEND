@@ -3,7 +3,6 @@
 /** Routes for jobs. */
 
 const jsonschema = require("jsonschema");
-
 const express = require("express");
 const { BadRequestError } = require("../expressError");
 const { ensureAdmin } = require("../middleware/auth");
@@ -14,6 +13,14 @@ const jobSearchSchema = require("../schemas/jobSearch.json");
 
 const router = express.Router({ mergeParams: true });
 
+/** Helper function to validate JSON schema */
+function validateSchema(data, schema) {
+  const validator = jsonschema.validate(data, schema);
+  if (!validator.valid) {
+    const errors = validator.errors.map(e => e.stack);
+    throw new BadRequestError(errors);
+  }
+}
 
 /** POST / { job } => { job }
  *
@@ -23,15 +30,9 @@ const router = express.Router({ mergeParams: true });
  *
  * Authorization required: admin
  */
-
-router.post("/", ensureAdmin, async function (req, res, next) {
+router.post("/", ensureAdmin, async (req, res, next) => {
   try {
-    const validator = jsonschema.validate(req.body, jobNewSchema);
-    if (!validator.valid) {
-      const errs = validator.errors.map(e => e.stack);
-      throw new BadRequestError(errs);
-    }
-
+    validateSchema(req.body, jobNewSchema);
     const job = await Job.create(req.body);
     return res.status(201).json({ job });
   } catch (err) {
@@ -46,23 +47,18 @@ router.post("/", ensureAdmin, async function (req, res, next) {
  * - minSalary
  * - hasEquity (true returns only jobs with equity > 0, other values ignored)
  * - title (will find case-insensitive, partial matches)
-
+ *
  * Authorization required: none
  */
-
-router.get("/", async function (req, res, next) {
-  const q = req.query;
-  // arrive as strings from querystring, but we want as int/bool
-  if (q.minSalary !== undefined) q.minSalary = +q.minSalary;
-  q.hasEquity = q.hasEquity === "true";
-
+router.get("/", async (req, res, next) => {
   try {
-    const validator = jsonschema.validate(q, jobSearchSchema);
-    if (!validator.valid) {
-      const errs = validator.errors.map(e => e.stack);
-      throw new BadRequestError(errs);
-    }
+    const q = req.query;
 
+    // Convert query parameters to appropriate types
+    if (q.minSalary !== undefined) q.minSalary = +q.minSalary; // Convert to number
+    q.hasEquity = q.hasEquity === "true"; // Convert to boolean
+
+    validateSchema(q, jobSearchSchema);
     const jobs = await Job.findAll(q);
     return res.json({ jobs });
   } catch (err) {
@@ -77,8 +73,7 @@ router.get("/", async function (req, res, next) {
  *
  * Authorization required: none
  */
-
-router.get("/:id", async function (req, res, next) {
+router.get("/:id", async (req, res, next) => {
   try {
     const job = await Job.get(req.params.id);
     return res.json({ job });
@@ -86,7 +81,6 @@ router.get("/:id", async function (req, res, next) {
     return next(err);
   }
 });
-
 
 /** PATCH /[jobId]  { fld1, fld2, ... } => { job }
  *
@@ -96,15 +90,9 @@ router.get("/:id", async function (req, res, next) {
  *
  * Authorization required: admin
  */
-
-router.patch("/:id", ensureAdmin, async function (req, res, next) {
+router.patch("/:id", ensureAdmin, async (req, res, next) => {
   try {
-    const validator = jsonschema.validate(req.body, jobUpdateSchema);
-    if (!validator.valid) {
-      const errs = validator.errors.map(e => e.stack);
-      throw new BadRequestError(errs);
-    }
-
+    validateSchema(req.body, jobUpdateSchema);
     const job = await Job.update(req.params.id, req.body);
     return res.json({ job });
   } catch (err) {
@@ -112,12 +100,11 @@ router.patch("/:id", ensureAdmin, async function (req, res, next) {
   }
 });
 
-/** DELETE /[handle]  =>  { deleted: id }
+/** DELETE /[id]  =>  { deleted: id }
  *
  * Authorization required: admin
  */
-
-router.delete("/:id", ensureAdmin, async function (req, res, next) {
+router.delete("/:id", ensureAdmin, async (req, res, next) => {
   try {
     await Job.remove(req.params.id);
     return res.json({ deleted: +req.params.id });
@@ -125,6 +112,5 @@ router.delete("/:id", ensureAdmin, async function (req, res, next) {
     return next(err);
   }
 });
-
 
 module.exports = router;

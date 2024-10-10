@@ -6,7 +6,6 @@ const jwt = require("jsonwebtoken");
 const { SECRET_KEY } = require("../config");
 const { UnauthorizedError } = require("../expressError");
 
-
 /** Middleware: Authenticate user.
  *
  * If a token was provided, verify it, and, if valid, store the token payload
@@ -14,7 +13,6 @@ const { UnauthorizedError } = require("../expressError");
  *
  * It's not an error if no token was provided or if the token is not valid.
  */
-
 function authenticateJWT(req, res, next) {
   try {
     const authHeader = req.headers && req.headers.authorization;
@@ -24,34 +22,34 @@ function authenticateJWT(req, res, next) {
     }
     return next();
   } catch (err) {
-    return next();
+    if (process.env.NODE_ENV !== "production") {
+      console.error("JWT authentication failed:", err.message);
+    }
+    return next(); // Proceed without authentication if token is invalid
   }
 }
 
-/** Middleware to use when they must be logged in.
+/** Middleware to use when user must be logged in.
  *
  * If not, raises Unauthorized.
  */
-
 function ensureLoggedIn(req, res, next) {
   try {
-    if (!res.locals.user) throw new UnauthorizedError();
+    if (!res.locals.user) throw new UnauthorizedError("User not authenticated.");
     return next();
   } catch (err) {
     return next(err);
   }
 }
 
-
-/** Middleware to use when they be logged in as an admin user.
+/** Middleware to use when user must be logged in as an admin.
  *
- *  If not, raises Unauthorized.
+ * If not, raises Unauthorized.
  */
-
 function ensureAdmin(req, res, next) {
   try {
     if (!res.locals.user || !res.locals.user.isAdmin) {
-      throw new UnauthorizedError();
+      throw new UnauthorizedError("Admin privileges required.");
     }
     return next();
   } catch (err) {
@@ -59,24 +57,22 @@ function ensureAdmin(req, res, next) {
   }
 }
 
-/** Middleware to use when they must provide a valid token & be user matching
- *  username provided as route param.
+/** Middleware to use when user must provide a valid token & be the user matching
+ *  the username provided as a route param.
  *
  *  If not, raises Unauthorized.
  */
-
 function ensureCorrectUserOrAdmin(req, res, next) {
   try {
     const user = res.locals.user;
     if (!(user && (user.isAdmin || user.username === req.params.username))) {
-      throw new UnauthorizedError();
+      throw new UnauthorizedError("Must be admin or correct user.");
     }
     return next();
   } catch (err) {
     return next(err);
   }
 }
-
 
 module.exports = {
   authenticateJWT,
