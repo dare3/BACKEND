@@ -5,7 +5,7 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-const helmet = require("helmet"); // Added for security
+const helmet = require("helmet");
 
 const { NotFoundError } = require("./expressError");
 const { authenticateJWT } = require("./middleware/auth");
@@ -24,7 +24,7 @@ app.use(morgan("tiny")); // Logging middleware
 app.use(authenticateJWT); // Apply JWT auth middleware globally
 
 /** CORS configuration */
-const allowedOrigins = process.env.FRONTEND_URL || "http://localhost:3000"; // Use env variable for flexibility
+const allowedOrigins = process.env.FRONTEND_URL || "http://localhost:3000";
 
 app.use(cors({
   origin: allowedOrigins.split(","), // Supports multiple origins if needed
@@ -58,10 +58,7 @@ app.use(function (err, req, res, next) {
   const message = err.message || "Internal Server Error";
 
   return res.status(status).json({
-    error: {
-      message,
-      status,
-    },
+    error: { message, status },
   });
 });
 
